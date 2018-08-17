@@ -1,0 +1,109 @@
+---
+title: "Exploratory Data Analysis"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+sample <- read_csv("./../data/train_sample.csv")
+```
+
+```{r}
+dplyr::glimpse(sample)
+
+```
+```{r}
+sample$ip <- as.factor(sample$ip)
+sample$app <- as.factor(sample$app)
+sample$device <- as.factor(sample$device)
+sample$os <- as.factor(sample$os)
+sample$channel <- as.factor(sample$channel)
+```
+
+# Check ip's / number of downloads
+```{r}
+dplyr::n_distinct(sample$ip)
+#sample ->
+```
+
+## Downloads by channel
+```{r}
+sample %>% dplyr::group_by(channel) %>%
+  summarise(n=n(), downloads=sum(is_attributed)) %>%
+  arrange(desc(downloads))
+
+```
+## There definitely seems to be an association with certain channels...
+
+```{r}
+sample %>% dplyr::group_by(app, channel) %>%
+  summarise(n=n(), ratio=sum(is_attributed)/n) %>%
+  arrange(desc(ratio))
+```
+
+## Some apps only see a single download from one channel... what about apps that see downloads from multiple channels?
+```{r}
+sample %>% dplyr::group_by(app) %>%
+  summarise(n=n(), ratio=sum(is_attributed)/n) %>%
+  arrange(desc(ratio))
+```
+## app 19 has a high number of clicks and relatively high ratio - lets check it out by channel
+
+```{r}
+sample %>% filter(app == 19) %>%
+  group_by(channel) %>%
+  summarise(n=n(), ratio=sum(is_attributed)/n) %>%
+  arrange(desc(ratio))
+```
+
+## Downloads by Channel clicks/download ratio
+```{r}
+sample %>% group_by(channel) %>%
+  summarise(n=n(), downloads=sum(is_attributed), ratio=downloads/n) %>%
+  arrange(desc(downloads))
+```
+## Are there channels dedicated to lots of fake ads?
+```{r}
+sample %>% group_by(channel, app) %>%
+  summarise(n=n(), downloads=sum(is_attributed), ratio=downloads/n) %>%
+  arrange(desc(downloads))
+```
+
+
+
+```{r}
+# Load data in
+sample <- read_csv("./../data/train_sample.csv", 
+     col_types = cols(app = col_character(), 
+         attributed_time = col_time(format = "%H:%M:%S"), 
+         channel = col_character(), click_time = col_datetime(format = "%Y-%m-%d %H:%M:%S"), 
+         device = col_character(), ip = col_character(), 
+         is_attributed = col_logical(), os = col_character()), 
+     na = "NA", col_names = TRUE)
+
+sample$ip <- as.factor(sample$ip)
+sample$app <- as.factor(sample$app)
+sample$device <- as.factor(sample$device)
+sample$os <- as.factor(sample$os)
+sample$channel <- as.factor(sample$channel)
+
+```
+
+
